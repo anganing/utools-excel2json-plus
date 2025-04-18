@@ -1,6 +1,6 @@
 {
-  "main": "./index.html",
-  "preload": "./preload.js",
+  "main": "index.html",
+  "preload": "preload.js",
   "logo": "logo.png",
   "development": {
     "main": "http://127.0.0.1:3000"
