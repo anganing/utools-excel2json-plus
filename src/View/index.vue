@@ -42,15 +42,21 @@
             </div>
 
             <div class="options-right flex items-center">
-          
+
               <!-- 复制结果 -->
               <n-button size="small" strong secondary  type="primary" class="copy-text-btn ml-10px" :data-clipboard-text="jsonValue"
                 :disabled="!jsonValue" >
                 {{ copyBtnText }}
               </n-button>
 
+              <!-- JSON转换增强 -->
+              <n-button size="small" strong secondary  type="primary" class="ml-10px"
+                        :disabled="!jsonValue" @click="toCustomizeJSONEditHandler" >
+                JSON转换增强
+              </n-button>
+
               <!-- JSON编辑器 -->
-              <n-button size="small" strong secondary  type="primary" class="ml-10px" 
+              <n-button size="small" strong secondary  type="primary" class="ml-10px"
                 :disabled="!jsonValue" @click="toJSONEditHandler" >
                 JSON编辑器
               </n-button>
@@ -84,6 +90,21 @@
         <SettingModal ref="settingModalRef" />
       </n-drawer-content>
     </n-drawer>
+
+    <!-- JSON转换增强抽屉 -->
+    <n-drawer v-model:show="showCustomizeDrawer" :width="800" placement="right">
+      <n-drawer-content title="自定义JSON转换">
+        <n-input
+            v-model:value="code"
+            type="textarea"
+            clearable
+            autosize
+            placeholder="请输入你的js转换脚本..."
+        />
+        <n-button type="primary" @click="doCustomizeJSONEdit">转换</n-button>
+      </n-drawer-content>
+
+    </n-drawer>
   </n-config-provider>
 </template>
 
@@ -91,7 +112,7 @@
 // import { FileExcelTwotone as ArchiveIcon, SettingOutlined as settingIcon } from "@vicons/antd";
 import { SettingOutlined as settingIcon } from "@vicons/antd";
 import { CloudUploadSharp as ArchiveIcon } from "@vicons/ionicons5";
-import { useOsTheme, darkTheme } from "naive-ui";
+import {useOsTheme, darkTheme, useNotification} from "naive-ui";
 import { storeToRefs } from "pinia"
 
 import SettingModal from "./components/SettingModal.vue"
@@ -102,6 +123,59 @@ import useUtools from "./useUtools";
 import useShowJson from "./useShowJson";
 import useDark from "./useDark";
 import { useSetting } from "@/stores/setting"
+
+const notification = useNotification();
+
+const showCustomizeDrawer = ref(false)
+const code = ref(`(rawExcelJsonStr) => {
+  const rawExcelJson = JSON.parse(rawExcelJsonStr);
+
+  // 最终数据
+  let result = []
+
+  const workOrders = rawExcelJson.workOrders || [];
+  const wipComponent = rawExcelJson?.wipComponent ||[];
+  const wipOperation = rawExcelJson?.wipOperation || [];
+  const wipResource = rawExcelJson.wipResource || [];
+
+  // 遍历工单找到对应的 组件、工序、资源
+  workOrders.forEach((workOrder) => {
+    const obj =  {
+      ...workOrder,
+      wipComponent: wipComponent?.filter((c) => c.workNumId == workOrder?.workNumId),
+      wipOperation: wipOperation.filter((p) => p.workNumId == workOrder?.workNumId),
+      wipResource: wipResource.filter((r) => r.workNumId == workOrder?.workNumId)
+    }
+    result.push(obj);
+  })
+
+  return JSON.stringify(result);
+}`)
+const doCustomizeJSONEdit = () => {
+  if (!code.value) {
+    notification.error({
+      content: "脚本不能为空",
+      duration: 1000
+    });
+    return;
+  }
+
+  let convertStrJsonValue = jsonValue.value;
+  try {
+    const rawExcelJsonStr = jsonValue.value;
+    // 执行用户自定义的函数代码
+    const fn = eval('(' + code.value + ')');
+    convertStrJsonValue = fn(rawExcelJsonStr);
+    console.log("convertStrJsonValue", convertStrJsonValue);
+  } catch (e) {
+    console.log(e)
+    notification.error({
+      content: JSON.stringify(e),
+      duration: 5000
+    });
+  }
+  toJsonEdit(convertStrJsonValue)
+}
 
 const {
   // 自动格式化
@@ -185,6 +259,13 @@ function clearResultHandler() {
 
 function toJSONEditHandler(){
   toJsonEdit(jsonValue.value)
+}
+
+/**
+ * 自定义转换 JSON
+ */
+const toCustomizeJSONEditHandler = () => {
+  showCustomizeDrawer.value = true
 }
 
 onMounted(() => {
