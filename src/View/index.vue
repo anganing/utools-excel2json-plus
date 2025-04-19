@@ -106,11 +106,10 @@
         :mask-closable="false"
     >
       <n-drawer-content closable title="自定义 JSON 转换">
-        <n-collapse :default-expanded-names="['3']">
+        <n-collapse :default-expanded-names="['3', '4']">
           <n-collapse-item title="原始解析JSON数据" name="1">
             <codemirror v-model="jsonValue"
                         :style="{ height: '100%' }"
-                        :autofocus="true"
                         :tabSize="2"
                         disabled
                         :extensions="[json()]"
@@ -119,7 +118,6 @@
           <n-collapse-item title="例子对应的 js 脚本" name="2">
             <codemirror v-model="demoCode"
                         :style="{ height: '100%' }"
-                        :autofocus="true"
                         :tabSize="2"
                         disabled
                         :extensions="[javascript()]"
@@ -133,9 +131,18 @@
                         :extensions="[javascript()]"
             />
           </n-collapse-item>
+          <n-collapse-item title="转换结果" name="4">
+            <codemirror v-model="result"
+                        :style="{ height: '100%' }"
+                        :tabSize="2"
+                        disabled
+                        :extensions="[json()]"
+            />
+          </n-collapse-item>
         </n-collapse>
         <template #footer>
           <n-space>
+            <n-button type="primary" :disabled="!code" @click="convertJson">转换</n-button>
             <n-button type="primary" :disabled="!code" @click="convertJsonAndEdit">转换并编辑</n-button>
             <n-button type="primary" :disabled="!code" @click="convertJsonAndCopy">转换并复制</n-button>
           </n-space>
@@ -235,6 +242,35 @@ const convertJsonAndEdit = () => {
   }
   // 跳转到第三方 JSON 编辑器
   toJsonEdit(convertStrJsonValue)
+}
+
+const result = ref('');
+const convertJson = () => {
+  if (!code.value) {
+    notification.error({
+      content: "脚本不能为空",
+      duration: 1000
+    });
+    return;
+  }
+
+  let convertStrJsonValue = jsonValue.value;
+  try {
+    const rawExcelJsonStr = jsonValue.value;
+    // 执行用户自定义的函数代码
+    const fn = eval('(' + code.value + ')');
+    convertStrJsonValue = fn(rawExcelJsonStr);
+    // 统一格式化逻辑
+    convertStrJsonValue = JSON.stringify(JSON.parse(convertStrJsonValue), null, 2)
+    console.log("convertStrJsonValue", convertStrJsonValue);
+  } catch (e) {
+    console.log(e)
+    notification.error({
+      content: JSON.stringify(e),
+      duration: 5000
+    });
+  }
+  result.value = convertStrJsonValue;
 }
 
 const convertJsonAndCopy = () => {
