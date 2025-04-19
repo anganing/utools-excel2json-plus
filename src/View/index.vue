@@ -93,15 +93,28 @@
 
     <!-- JSON转换增强抽屉 -->
     <n-drawer v-model:show="showCustomizeDrawer" :width="800" placement="right">
-      <n-drawer-content title="自定义JSON转换">
-        <n-input
-            v-model:value="code"
-            type="textarea"
-            clearable
-            autosize
-            placeholder="请输入你的js转换脚本..."
-        />
-        <n-button type="primary" @click="doCustomizeJSONEdit">转换</n-button>
+      <n-drawer-content closable title="自定义 JSON 转换">
+        <n-collapse :default-expanded-names="['1','3']">
+          <n-collapse-item title="提示" name="1">
+            <n-input v-model:value="codeTips" type="textarea" autosize readonly />
+          </n-collapse-item>
+          <n-collapse-item title="例子对应的 js 脚本" name="2">
+            <n-input v-model:value="demoCode" type="textarea" autosize readonly />
+          </n-collapse-item>
+          <n-collapse-item title="转换 JSON js 脚本" name="3">
+            <n-input
+                v-model:value="code"
+                type="textarea"
+                clearable
+                autosize
+                :placeholder="codePlaceholder"
+            />
+          </n-collapse-item>
+        </n-collapse>
+        <n-space>
+          <n-button type="primary" @click="convertJsonAndEdit">转换并编辑</n-button>
+          <n-button type="primary" @click="convertJsonAndCopy">转换并复制</n-button>
+        </n-space>
       </n-drawer-content>
 
     </n-drawer>
@@ -124,34 +137,57 @@ import useShowJson from "./useShowJson";
 import useDark from "./useDark";
 import { useSetting } from "@/stores/setting"
 
-const notification = useNotification();
-
-const showCustomizeDrawer = ref(false)
-const code = ref(`(rawExcelJsonStr) => {
+const codeTips = ref(`
+// rawExcelJsonStr 解析 excel 后的 json 字符串 可以自己随便定义名称（数据就是你第一次看到的 json ）
+(rawExcelJsonStr) => {
+  // 将 json 字符串转为 json 对象才能操作解析结果
   const rawExcelJson = JSON.parse(rawExcelJsonStr);
 
   // 最终数据
   let result = []
 
-  const workOrders = rawExcelJson.workOrders || [];
+  // 例子：将原来的 JSON 字符内串 用 数组包裹 （实际根据自己需求编写）
+  result = JSON.parse('[' + rawExcelJsonStr + ']');
+
+  // 转换后一定要将自己定义的 JSON 对象转为 JSON 字符串 除非本身就是 JSON 字符串
+  return JSON.stringify(result);
+}
+`)
+
+const demoCode = ref(`
+(rawExcelJsonStr) => {
+  const rawExcelJson = JSON.parse(rawExcelJsonStr);
+  // 最终数据
+  let result = []
+
+  const workOrders = rawExcelJson?.workOrders || [];
   const wipComponent = rawExcelJson?.wipComponent ||[];
   const wipOperation = rawExcelJson?.wipOperation || [];
-  const wipResource = rawExcelJson.wipResource || [];
+  const wipResource = rawExcelJson?.wipResource || [];
 
   // 遍历工单找到对应的 组件、工序、资源
   workOrders.forEach((workOrder) => {
     const obj =  {
       ...workOrder,
       wipComponent: wipComponent?.filter((c) => c.workNumId == workOrder?.workNumId),
-      wipOperation: wipOperation.filter((p) => p.workNumId == workOrder?.workNumId),
-      wipResource: wipResource.filter((r) => r.workNumId == workOrder?.workNumId)
+      wipOperation: wipOperation?.filter((p) => p.workNumId == workOrder?.workNumId),
+      wipResource: wipResource?.filter((r) => r.workNumId == workOrder?.workNumId)
     }
     result.push(obj);
   })
 
   return JSON.stringify(result);
-}`)
-const doCustomizeJSONEdit = () => {
+}
+`);
+
+const codePlaceholder = ref(`请输入你的js转换脚本...`);
+
+const notification = useNotification();
+
+const showCustomizeDrawer = ref(false);
+const code = ref('');
+
+const convertJsonAndEdit = () => {
   if (!code.value) {
     notification.error({
       content: "脚本不能为空",
@@ -174,8 +210,40 @@ const doCustomizeJSONEdit = () => {
       duration: 5000
     });
   }
+  // 跳转到第三方 JSON 编辑器
   toJsonEdit(convertStrJsonValue)
 }
+
+const convertJsonAndCopy = () => {
+  if (!code.value) {
+    notification.error({
+      content: "脚本不能为空",
+      duration: 1000
+    });
+    return;
+  }
+
+  let convertStrJsonValue = jsonValue.value;
+  try {
+    const rawExcelJsonStr = jsonValue.value;
+    // 执行用户自定义的函数代码
+    const fn = eval('(' + code.value + ')');
+    convertStrJsonValue = fn(rawExcelJsonStr);
+    console.log("convertStrJsonValue", convertStrJsonValue);
+  } catch (e) {
+    console.log(e)
+    notification.error({
+      content: JSON.stringify(e),
+      duration: 5000
+    });
+  }
+  window.utools.copyText(convertStrJsonValue);
+  notification.success({
+    content: '已复制到剪切板',
+    duration: 1000
+  });
+}
+
 
 const {
   // 自动格式化
