@@ -19,6 +19,9 @@
                 <n-p depth="3" class="mt-8px">
                   支持转换.xls 或 .xlsx格式的文件
                 </n-p>
+                <n-p depth="3" class="mt-8px">
+                  excel 的 sheet name 和 表头必须符合 js 变量名规范
+                </n-p>
               </n-upload-dragger>
             </n-upload>
           </div>
@@ -70,10 +73,13 @@
           </div>
 
           <!-- 输出json代码 -->
-          <!-- 压缩单行超过一万字符的代码不高亮显示 -->
-          <pre v-if="!isFormatter && jsonValue.length > 10000"
-            class="json-container flex-1 overflow-y-auto">{{ jsonValue }}</pre>
-          <HighLightJs v-else language="json" :code="jsonValue" class="json-container flex-1 overflow-y-auto" />
+          <codemirror v-model="jsonValue"
+                      :style="{ height: '80%' }"
+                      :autofocus="true"
+                      :tabSize="2"
+                      disabled
+                      :extensions="[json()]"
+          />
         </div>
       </div>
 
@@ -92,31 +98,49 @@
     </n-drawer>
 
     <!-- JSON转换增强抽屉 -->
-    <n-drawer v-model:show="showCustomizeDrawer" :width="800" placement="right">
+    <n-drawer
+        v-model:show="showCustomizeDrawer"
+        resizable
+        placement="right"
+        :close-on-esc="false"
+        :mask-closable="false"
+    >
       <n-drawer-content closable title="自定义 JSON 转换">
-        <n-collapse :default-expanded-names="['1','3']">
-          <n-collapse-item title="提示" name="1">
-            <n-input v-model:value="codeTips" type="textarea" autosize readonly />
+        <n-collapse :default-expanded-names="['3']">
+          <n-collapse-item title="原始解析JSON数据" name="1">
+            <codemirror v-model="jsonValue"
+                        :style="{ height: '100%' }"
+                        :autofocus="true"
+                        :tabSize="2"
+                        disabled
+                        :extensions="[json()]"
+            />
           </n-collapse-item>
           <n-collapse-item title="例子对应的 js 脚本" name="2">
-            <n-input v-model:value="demoCode" type="textarea" autosize readonly />
+            <codemirror v-model="demoCode"
+                        :style="{ height: '100%' }"
+                        :autofocus="true"
+                        :tabSize="2"
+                        disabled
+                        :extensions="[javascript()]"
+            />
           </n-collapse-item>
           <n-collapse-item title="转换 JSON js 脚本" name="3">
-            <n-input
-                v-model:value="code"
-                type="textarea"
-                clearable
-                autosize
-                :placeholder="codePlaceholder"
+            <codemirror v-model="code"
+                        :style="{ height: '100%' }"
+                        :autofocus="true"
+                        :tabSize="2"
+                        :extensions="[javascript()]"
             />
           </n-collapse-item>
         </n-collapse>
-        <n-space>
-          <n-button type="primary" @click="convertJsonAndEdit">转换并编辑</n-button>
-          <n-button type="primary" @click="convertJsonAndCopy">转换并复制</n-button>
-        </n-space>
+        <template #footer>
+          <n-space>
+            <n-button type="primary" :disabled="!code" @click="convertJsonAndEdit">转换并编辑</n-button>
+            <n-button type="primary" :disabled="!code" @click="convertJsonAndCopy">转换并复制</n-button>
+          </n-space>
+        </template>
       </n-drawer-content>
-
     </n-drawer>
   </n-config-provider>
 </template>
@@ -135,30 +159,18 @@ import useReadExcel from "./useReadExcel";
 import useUtools from "./useUtools";
 import useShowJson from "./useShowJson";
 import useDark from "./useDark";
-import { useSetting } from "@/stores/setting"
+import { useSetting } from "@/stores/setting";
+import { Codemirror } from "vue-codemirror";
+import { javascript } from "@codemirror/lang-javascript";
+import { json } from "@codemirror/lang-json";
 
-const codeTips = ref(`
-// rawExcelJsonStr 解析 excel 后的 json 字符串 可以自己随便定义名称（数据就是你第一次看到的 json ）
-(rawExcelJsonStr) => {
-  // 将 json 字符串转为 json 对象才能操作解析结果
-  const rawExcelJson = JSON.parse(rawExcelJsonStr);
-
-  // 最终数据
-  let result = []
-
-  // 例子：将原来的 JSON 字符内串 用 数组包裹 （实际根据自己需求编写）
-  result = JSON.parse('[' + rawExcelJsonStr + ']');
-
-  // 转换后一定要将自己定义的 JSON 对象转为 JSON 字符串 除非本身就是 JSON 字符串
-  return JSON.stringify(result);
-}
-`)
+const notification = useNotification();
 
 const demoCode = ref(`
 (rawExcelJsonStr) => {
   const rawExcelJson = JSON.parse(rawExcelJsonStr);
   // 最终数据
-  let result = []
+  let result = [];
 
   const workOrders = rawExcelJson?.workOrders || [];
   const wipComponent = rawExcelJson?.wipComponent ||[];
@@ -180,12 +192,23 @@ const demoCode = ref(`
 }
 `);
 
-const codePlaceholder = ref(`请输入你的js转换脚本...`);
-
-const notification = useNotification();
-
 const showCustomizeDrawer = ref(false);
-const code = ref('');
+const code = ref(`
+// rawExcelJsonStr 解析 excel 后的 json 字符串 可以自己随便定义名称（数据就是你第一次看到的 json ）
+(rawExcelJsonStr) => {
+  // 将 json 字符串转为 json 对象才能操作解析结果
+  const rawExcelJson = JSON.parse(rawExcelJsonStr);
+
+  // 最终数据
+  let result = [];
+
+  // 例子：将原来的 JSON 字符内串 用 数组包裹 （实际根据自己需求编写）
+  result = JSON.parse('[' + rawExcelJsonStr + ']');
+
+  // 转换后一定要将自己定义的 JSON 对象转为 JSON 字符串 除非本身就是 JSON 字符串
+  return JSON.stringify(result);
+}
+`);
 
 const convertJsonAndEdit = () => {
   if (!code.value) {
