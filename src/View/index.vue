@@ -6,11 +6,11 @@
         <div class="card-header">
           <div class="uploader-container">
             <n-upload accept=".xls,.xlsx" :default-upload="false" :show-file-list="false"
-              :on-change="fileChangeHandler">
+                      :on-change="fileChangeHandler">
               <n-upload-dragger>
                 <div class="mb-8px">
                   <n-icon size="30" :depth="3">
-                    <archive-icon color="#25b39eb8" />
+                    <archive-icon color="#25b39eb8"/>
                   </n-icon>
                 </div>
                 <n-text class="text-size-[16px]">
@@ -27,7 +27,7 @@
           </div>
         </div>
 
-        <n-divider />
+        <n-divider/>
 
         <!-- 下方，结果输出展示用 -->
         <div class="result h-full flex flex-col">
@@ -38,35 +38,42 @@
                 <n-switch v-model:value="isFormatter" :disabled="!jsonValue" />
               </label> -->
 
-                  <!-- 指定表名转换 -->
+              <!-- 指定表名转换 -->
               <n-select size="small" class="w-300px" clearable multiple placeholder="指定表名转换"
-                v-model:value="exportNameValue" :options="exportNameOptions" v-show="exportNameOptions.length" />
+                        v-model:value="exportNameValue" :options="exportNameOptions" v-show="exportNameOptions.length"/>
 
             </div>
 
             <div class="options-right flex items-center">
 
               <!-- 复制结果 -->
-              <n-button size="small" strong secondary  type="primary" class="copy-text-btn ml-10px" :data-clipboard-text="jsonValue"
-                :disabled="!jsonValue" >
+              <n-button size="small" strong secondary type="primary" class="copy-text-btn ml-10px"
+                        :data-clipboard-text="jsonValue"
+                        :disabled="!jsonValue">
                 {{ copyBtnText }}
               </n-button>
 
               <!-- JSON转换增强 -->
-              <n-button size="small" strong secondary  type="primary" class="ml-10px"
-                        :disabled="!jsonValue" @click="toCustomizeJSONEditHandler" >
+              <n-button size="small" strong secondary type="primary" class="ml-10px"
+                        :disabled="!jsonValue" @click="toCustomizeJSONEditHandler">
                 JSON转换增强
               </n-button>
 
+              <!-- JSON转换增强 -->
+              <n-button size="small" strong secondary type="primary" class="ml-10px"
+                        @click="showAIDrawer=true">
+                问AI
+              </n-button>
+
               <!-- JSON编辑器 -->
-              <n-button size="small" strong secondary  type="primary" class="ml-10px"
-                :disabled="!jsonValue" @click="toJSONEditHandler" >
+              <n-button size="small" strong secondary type="primary" class="ml-10px"
+                        :disabled="!jsonValue" @click="toJSONEditHandler">
                 JSON编辑器
               </n-button>
 
               <!--  清空结果 -->
-              <n-button size="small" strong secondary  type="error" class="ml-10px" :disabled="!jsonValue"
-                @click="clearResultHandler" >
+              <n-button size="small" strong secondary type="error" class="ml-10px" :disabled="!jsonValue"
+                        @click="clearResultHandler">
                 清空结果
               </n-button>
             </div>
@@ -84,16 +91,16 @@
       </div>
 
       <n-icon size="20" class="setting-icon absolute right-10px bottom-10px cursor-pointer"
-       color="#25b39e"
-       @click="openSettingHandler">
-        <settingIcon class="text-size-(20px)" />
+              color="#25b39e"
+              @click="openSettingHandler">
+        <settingIcon class="text-size-(20px)"/>
       </n-icon>
     </div>
 
     <!-- 设置抽屉 -->
     <n-drawer v-model:show="showDrawer" :width="300" placement="right">
       <n-drawer-content title="自定义">
-        <SettingModal ref="settingModalRef" />
+        <SettingModal ref="settingModalRef"/>
       </n-drawer-content>
     </n-drawer>
 
@@ -149,15 +156,60 @@
         </template>
       </n-drawer-content>
     </n-drawer>
+
+    <!-- AI问答抽屉 -->
+    <n-drawer
+        v-model:show="showAIDrawer"
+        width="500"
+        placement="left"
+        :close-on-esc="false"
+    >
+      <n-drawer-content closable title="AI问答">
+        <n-space vertical>
+          <n-input
+              type="textarea"
+              placeholder="endpoint"
+              v-model:value="endpoint"
+          />
+          <n-input
+              type="textarea"
+              placeholder="token"
+              v-model:value="token"
+          />
+          <n-input
+              type="textarea"
+              placeholder="model"
+              v-model:value="model"
+          />
+          <n-input
+              autosize
+              type="textarea"
+              placeholder="question"
+              v-model:value="question"
+          />
+          <n-input
+              autosize
+              type="textarea"
+              placeholder="answer..."
+              v-model:value="answer"
+          />
+        </n-space>
+        <template #footer>
+          <n-space>
+            <n-button :disabled="!question" type="primary" @click="askAI">发送</n-button>
+          </n-space>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
   </n-config-provider>
 </template>
 
 <script setup>
 // import { FileExcelTwotone as ArchiveIcon, SettingOutlined as settingIcon } from "@vicons/antd";
-import { SettingOutlined as settingIcon } from "@vicons/antd";
-import { CloudUploadSharp as ArchiveIcon } from "@vicons/ionicons5";
+import {SettingOutlined as settingIcon} from "@vicons/antd";
+import {CloudUploadSharp as ArchiveIcon} from "@vicons/ionicons5";
 import {useOsTheme, darkTheme, useNotification} from "naive-ui";
-import { storeToRefs } from "pinia"
+import {storeToRefs} from "pinia"
 
 import SettingModal from "./components/SettingModal.vue"
 import useCopy from "./useCopy";
@@ -166,10 +218,52 @@ import useReadExcel from "./useReadExcel";
 import useUtools from "./useUtools";
 import useShowJson from "./useShowJson";
 import useDark from "./useDark";
-import { useSetting } from "@/stores/setting";
-import { Codemirror } from "vue-codemirror";
-import { javascript } from "@codemirror/lang-javascript";
-import { json } from "@codemirror/lang-json";
+import {useSetting} from "@/stores/setting";
+import {Codemirror} from "vue-codemirror";
+import {javascript} from "@codemirror/lang-javascript";
+import {json} from "@codemirror/lang-json";
+import ModelClient, {isUnexpected} from "@azure-rest/ai-inference";
+import {AzureKeyCredential} from "@azure/core-auth";
+
+const showAIDrawer = ref(false);
+const endpoint = ref("");
+const token = ref("");
+const model = ref("");
+const question = ref("");
+const answer = ref("");
+
+const askAI = async () => {
+  const client = ModelClient(
+      endpoint.value,
+      new AzureKeyCredential(token.value),
+  );
+
+  const response = await client.path("/chat/completions").post({
+    body: {
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant.在我为指定的情况下请用中文回答！你的主要任务是帮助我完成这个函数的编写：" + code.value
+        },
+        {
+          role: "user",
+          content: "你好，" + question.value
+        },
+      ],
+      temperature: 1.0,
+      top_p: 1.0,
+      max_tokens: 10000,
+      model: model.value
+    }
+  });
+
+  if (isUnexpected(response)) {
+    throw response.body.error;
+  }
+
+  console.log(response.body.choices[0].message.content);
+  answer.value = response.body.choices[0].message.content;
+}
 
 const notification = useNotification();
 
@@ -319,6 +413,7 @@ const exportNameValue = ref([]);
 // 设置抽屉
 const showDrawer = ref(false)
 const settingModalRef = ref();
+
 function openSettingHandler() {
   showDrawer.value = true
   nextTick(() => {
@@ -328,24 +423,23 @@ function openSettingHandler() {
   })
 }
 
-const { isDark } = useDark();
+const {isDark} = useDark();
 
-const { HighLightJs } = useHeightLight(isDark);
-const { runFileRead, sheetNames, excelvalue, renderFileByNode, clearResult } =
-  useReadExcel(exportNameValue);
+const {HighLightJs} = useHeightLight(isDark);
+const {runFileRead, sheetNames, excelvalue, renderFileByNode, clearResult} =
+    useReadExcel(exportNameValue);
 
-const { showMainWindow, hideMainWindow,toJsonEdit } = useUtools(
-  sheetNames,
-  excelvalue,
-  exportNameValue,
-  renderFileByNode
+const {showMainWindow, hideMainWindow, toJsonEdit} = useUtools(
+    sheetNames,
+    excelvalue,
+    exportNameValue,
+    renderFileByNode
 );
 
-const { copyBtnText, initClipboard } = useCopy(clearResult, hideMainWindow);
+const {copyBtnText, initClipboard} = useCopy(clearResult, hideMainWindow);
 
 
-
-const { jsonValue } = useShowJson(isFormatter, excelvalue, exportNameValue);
+const {jsonValue} = useShowJson(isFormatter, excelvalue, exportNameValue);
 
 // 可选表名
 const exportNameOptions = computed(() => {
@@ -358,14 +452,13 @@ const exportNameOptions = computed(() => {
 });
 
 
-
 const styles = computed(() => {
   const light = !isDark.value;
   return {
     codeBg: light ? "#fafafa" : "#282c34",
     cardShadow: light
-      ? "0 0 12px 0px rgba(0, 0, 0, .25)"
-      : "0 0 12px 0px rgba(0, 0, 0, 1)",
+        ? "0 0 12px 0px rgba(0, 0, 0, .25)"
+        : "0 0 12px 0px rgba(0, 0, 0, 1)",
     codeColor: light ? "#666" : "#aaa",
   };
 });
@@ -384,7 +477,7 @@ function clearResultHandler() {
   clearResult()
 }
 
-function toJSONEditHandler(){
+function toJSONEditHandler() {
   toJsonEdit(jsonValue.value)
 }
 
@@ -423,7 +516,7 @@ onMounted(() => {
 
       .n-upload-dragger {
         padding: 10px;
-        
+
       }
     }
   }
