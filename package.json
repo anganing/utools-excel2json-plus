@@ -3,7 +3,7 @@
   "private": true,
   "version": "3.0.0",
   "scripts": {
-    "dev": "vite --open",
+    "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview"
   },
@@ -15,27 +15,27 @@
     "@codemirror/lang-json": "^6.0.1",
     "@highlightjs/vue-plugin": "^2.1.0",
     "axios": "1.8.2",
-    "clipboard": "^2.0.10",
+    "clipboard": "^2.0.11",
     "highlight.js": "^11.11.1",
     "naive-ui": "^2.41.0",
     "normalize.css": "^8.0.1",
-    "pinia": "^2.0.14",
-    "vue": "^3.2.25",
+    "pinia": "^2.3.1",
+    "vue": "^3.5.13",
     "vue-codemirror": "^6.1.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vicons/antd": "^0.12.0",
     "@vicons/ionicons5": "^0.12.0",
-    "@vitejs/plugin-vue": "^2.3.3",
-    "sass": "^1.49.11",
-    "typescript": "^4.5.4",
+    "@vitejs/plugin-vue": "^2.3.4",
+    "sass": "^1.87.0",
+    "typescript": "^5.8.3",
     "unplugin-auto-import": "^0.6.9",
     "unplugin-vue-components": "^0.18.5",
     "vfonts": "0.0.3",
     "vite": "6.2.6",
-    "vite-plugin-windicss": "^1.8.3",
-    "vue-tsc": "^0.34.7",
-    "windicss": "^3.5.1"
+    "vite-plugin-windicss": "^1.9.4",
+    "vue-tsc": "^2.2.10",
+    "windicss": "^3.5.6"
   }
 }
