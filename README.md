@@ -44,7 +44,7 @@ vue3 + vite2 + utools
 
 ## 版本记录
 
-### v2.0.0
+### v3.0.0
 - Github Models集成，可AI帮编写转换js函数
 - 基础lib升级到最新版
 
