@@ -31,12 +31,22 @@ vue3 + vite2 + utools
 ![1](./doc/assets/3.png)
 ![1](./doc/assets/4.png)
 
+![1](./doc/assets/ai/1.png)
+![1](./doc/assets/ai/2.png)
+![1](./doc/assets/ai/3.png)
+![1](./doc/assets/ai/4.png)
+![1](./doc/assets/ai/5.png)
+
 
 ## utools插件安装
 1. 由于在 utools 发布审核失败，提供 utools 插件离线安装包，安装包在 `utools-offline-setup/excel2json-plus-1.0.0.upxs`
 2. 等待 utools 审核发布成功后在插件市场搜索 `excel2json-plus` 进行安装
 
 ## 版本记录
+
+### v2.0.0
+- Github Models集成，可AI帮编写转换js函数
+- 基础lib升级到最新版
 
 ### v2.0.0
 
